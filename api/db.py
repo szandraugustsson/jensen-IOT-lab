@@ -63,11 +63,11 @@ def device_exists(device_id):
     # anslut till PostgreSQL databasen, spara anslutningen i 'conn'
     with get_connection() as conn:
 
-    # skapa en cursor som vi använder för att skicka SQL kommandon till databasen
+    # skapa en cursor för att skicka SQL frågan till databasen
         # conn = kontakten med databasen
         # cur  = verktyget vi använder för att skicka SQL
         with conn.cursor() as cur:
-    # kör query och använd device_id som värdet för '%s'
+    # kör SQL frågan och använd device_id som värdet för '%s'
             cur.execute(query, (device_id,))
     # hämta den första raden av resultatet
             row = cur.fetchone()
@@ -76,10 +76,27 @@ def device_exists(device_id):
     
 def get_latest_measurement(device_id):
     # TODO M1:docker compose exec api python -m pytest -q
-
     # Implementera senaste mätvärdet för en sensor.
 
-    return None
+    # SQL frågan letar efter rätt sensor
+    # sorterar mätningarna från nyast till äldst
+    # tar den senaste
+
+    query = """
+        SELECT id, device_id, temperature, humidity, battery, created_at
+        FROM measurements
+        WHERE device_id = %s
+        ORDER BY created_at DESC
+        LIMIT 1;
+    """
+
+    with get_connection() as conn:
+    # 'RealDictCursor' gör att resultatet kommer tillbaka som en dictionary
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(query, (device_id,))
+            row = cur.fetchone()
+    # gör raden kompatibel med JSON
+            return _json_ready(row)
 
 def get_measurements_for_device(device_id):
     # TODO M1:
