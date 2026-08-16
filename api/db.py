@@ -3,7 +3,6 @@ from decimal import Decimal
 import psycopg2
 import psycopg2.extras
 
-
 def get_connection():
     return psycopg2.connect(
         host=os.getenv("DB_HOST", "db"),
@@ -12,7 +11,6 @@ def get_connection():
         user=os.getenv("DB_USER", "student"),
         password=os.getenv("DB_PASSWORD", "student"),
     )
-
 
 def _json_ready(row):
     if row is None:
@@ -25,7 +23,6 @@ def _json_ready(row):
         result["created_at"] = result["created_at"].isoformat()
     return result
 
-
 def get_devices():
     query = """
         SELECT id, device_id, location, device_type
@@ -36,7 +33,6 @@ def get_devices():
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(query)
             return [dict(row) for row in cur.fetchall()]
-
 
 def get_measurements():
     query = """
@@ -50,25 +46,45 @@ def get_measurements():
             cur.execute(query)
             return [_json_ready(row) for row in cur.fetchall()]
 
-
 def device_exists(device_id):
     # TODO M1:
-    # Kontrollera om device_id finns i tabellen devices.
+    # Kontrollera om 'device_id' finns i tabellen 'devices'.
     # Returnera True eller False.
-    return False
 
+    # returnerar '1' för de rader som uppfyller WHERE villkoret
+    # %s är platshållare för värdet
 
+    query = """
+        SELECT 1
+        FROM devices
+        WHERE device_id = %s;
+    """
+
+    # anslut till PostgreSQL databasen, spara anslutningen i 'conn'
+    with get_connection() as conn:
+
+    # skapa en cursor som vi använder för att skicka SQL kommandon till databasen
+        # conn = kontakten med databasen
+        # cur  = verktyget vi använder för att skicka SQL
+        with conn.cursor() as cur:
+    # kör query och använd device_id som värdet för '%s'
+            cur.execute(query, (device_id,))
+    # hämta den första raden av resultatet
+            row = cur.fetchone()
+    # om en rad finns returnera True, annars False
+            return row is not None
+    
 def get_latest_measurement(device_id):
-    # TODO M1:
-    # Implementera senaste mätvärdet för en sensor.
-    return None
+    # TODO M1:docker compose exec api python -m pytest -q
 
+    # Implementera senaste mätvärdet för en sensor.
+
+    return None
 
 def get_measurements_for_device(device_id):
     # TODO M1:
     # Implementera historik för en sensor.
     return []
-
 
 def insert_measurement(data):
     # TODO M1:
