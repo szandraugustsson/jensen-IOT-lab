@@ -79,6 +79,15 @@ def create_measurement():
     if errors:
         print(f"INVALID measurement from {data.get('deviceId', 'unknown')}: {errors}")
         return jsonify({"errors": errors}), 400
+    
+    if device_exists(data["deviceId"]):
+        saved_measurement = insert_measurement(data)
+
+        print(f"Measurement saved: {data}")
+
+        return jsonify({"measurement": saved_measurement}), 201
+    else:
+        return jsonify({"error": "deviceId not found"}), 400
 
     # TODO M1:
     # Kontrollera med device_exists(...) att deviceId tillhör en känd sensor.
