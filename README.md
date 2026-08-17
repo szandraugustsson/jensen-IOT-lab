@@ -129,3 +129,6 @@ Fortsätt nu till [docs/lab-guide.md](docs/lab-guide.md) och genomför milstolpa
 - Om port `5001` används av ett annat program: stoppa programmet eller starta med en annan port. PowerShell: `$env:API_PORT=5002; docker compose up --build`. macOS/Linux: `API_PORT=5002 docker compose up --build`.
 - Visa status med `docker compose ps` och loggar med `docker compose logs api db redis simulator`.
 - Om en kodändring inte syns, kontrollera att du har kört `docker compose up --build -d` efter ändringen.
+
+## M1/4. Grundläggande SQL-uppgifter
+De tre SQL-frågorna finns i [sql_queries.sql](database/sql_queries.sql).
