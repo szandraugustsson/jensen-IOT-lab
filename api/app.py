@@ -54,10 +54,15 @@ def latest(device_id):
     # 1. Försök läsa från Redis.
     # 2. Vid cache miss: läs från PostgreSQL.
     # 3. Spara databasresultatet i Redis.
-    return jsonify({
-        "message": "TODO: implementera latest measurement",
-        "deviceId": device_id
-    }), 501
+    if device_exists(device_id):
+        latest_measurement = get_latest_measurement(device_id)
+
+        if latest_measurement is not None:
+            return jsonify(latest_measurement), 200
+        else: 
+            return jsonify({"error": "no measurement found"}), 404
+    else:
+        return jsonify({"error": "deviceId not found"}), 404
 
 
 @app.get("/devices/<device_id>/measurements")
@@ -91,7 +96,7 @@ def create_measurement():
     else:
         return jsonify({"error": "deviceId not found"}), 400
 
-    # TODO M1:
+    # TODO M1: 
     # Kontrollera med device_exists(...) att deviceId tillhör en känd sensor.
     # Okänd sensor ska ge 400 med ett tydligt JSON-fel.
     #
