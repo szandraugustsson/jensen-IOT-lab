@@ -54,10 +54,21 @@ def latest(device_id):
     # 1. Försök läsa från Redis.
     # 2. Vid cache miss: läs från PostgreSQL.
     # 3. Spara databasresultatet i Redis.
+
+    # om sensorn finns
     if device_exists(device_id):
+        # försök hämta den senaste mätningen från Redis
+        cached_measurement = get_latest_from_cache(device_id)
+        # om mätningen finns i Redis, returnera den
+        if cached_measurement is not None:
+            return jsonify(cached_measurement), 200
+        # om mätningen inte finns i Redis, hämta den från PostgreSQL
         latest_measurement = get_latest_measurement(device_id)
 
         if latest_measurement is not None:
+            # spara mätningen i Redis så att den kan hittas snabbare nästa gång
+            set_latest_in_cache(device_id, latest_measurement)
+
             return jsonify(latest_measurement), 200
         else: 
             return jsonify({"error": "no measurement found"}), 404
@@ -89,6 +100,8 @@ def create_measurement():
     
     if device_exists(data["deviceId"]):
         saved_measurement = insert_measurement(data)
+        # uppdatera Redis med den nya senaste mätningen
+        set_latest_in_cache(data["deviceId"], saved_measurement)
 
         print(f"Measurement saved: {data}")
 

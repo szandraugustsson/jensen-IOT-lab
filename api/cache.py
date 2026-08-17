@@ -24,11 +24,11 @@ def get_latest_from_cache(device_id):
     return json.loads(cached_measurement)
 
 
-def set_latest_in_cache(device_id, measurement):
+def set_latest_in_cache(device_id, latest_measurement):
     # TODO M2:
     # spara senaste mätvärdet i Redis.
 
     # skapa samma nyckel som används för att hämta mätningen
     cache_key = f"latest:{device_id}"
     # spara mätningen som JSON i Redis med en nyckel för att kunna hitta den senare
-    client.set(cache_key, json.dumps(measurement))
+    client.set(cache_key, json.dumps(latest_measurement))
