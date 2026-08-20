@@ -45,15 +45,6 @@ def measurements():
 
 @app.get("/devices/<device_id>/latest")
 def latest(device_id):
-    # TODO M1:
-    # Läs senaste mätningen från PostgreSQL med get_latest_measurement(...).
-    # Returnera 404 om sensorn eller en mätning saknas.
-    #
-    # TODO M2:
-    # Utöka M1-lösningen med cache-aside:
-    # 1. Försök läsa från Redis.
-    # 2. Vid cache miss: läs från PostgreSQL.
-    # 3. Spara databasresultatet i Redis.
 
     # om sensorn finns
     if device_exists(device_id):
@@ -78,15 +69,11 @@ def latest(device_id):
 
 @app.get("/devices/<device_id>/measurements")
 def device_history(device_id):
-    # TODO M1:
-    # Hämta sensorhistorik från PostgreSQL.
-    # Känd sensor utan mätningar: 200 och []. Okänd sensor: 404.
     if device_exists(device_id):
-        device_history = get_measurements_for_device(device_id)
-        return jsonify(device_history), 200
+        device_measurements = get_measurements_for_device(device_id)
+        return jsonify(device_measurements), 200
     else:
-        return jsonify({"error": "deviceId not found"}), 404
-        
+        return jsonify({"error": "deviceId not found"}), 404       
 
 
 @app.post("/measurements")
@@ -109,24 +96,10 @@ def create_measurement():
     else:
         return jsonify({"error": "deviceId not found"}), 400
 
-    # TODO M1: 
-    # Kontrollera med device_exists(...) att deviceId tillhör en känd sensor.
-    # Okänd sensor ska ge 400 med ett tydligt JSON-fel.
-    #
-    # Spara till PostgreSQL via insert_measurement(data).
-    #
-    # TODO M2:
-    # Uppdatera latest-cache för sensorn.
-    #
-    # Under starter-fasen returneras 202 så att simulatorn kan köras
-    # även innan studenten implementerat persistensen.
-    print(f"VALID measurement received: {data}")
-    return jsonify({"status": "accepted", "measurement": data}), 202
-
 
 @app.get("/statistics")
 def statistics():
-    # ⭐ Utmaning:
+    # Utmaning:
     # Returnera antal devices, antal measurements, avg temp etc.
     return jsonify({"message": "Optional challenge"}), 501
 

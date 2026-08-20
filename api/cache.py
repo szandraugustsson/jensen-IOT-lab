@@ -10,9 +10,6 @@ client = redis.Redis(
 
 
 def get_latest_from_cache(device_id):
-    # TODO M2:
-    # Läs senaste mätvärdet från Redis.
-
     # skapa en nyckel för sensorns senaste mätning
     cache_key = f"latest:{device_id}"
     # hämta den senaste mätningen från Redis
@@ -25,9 +22,6 @@ def get_latest_from_cache(device_id):
 
 
 def set_latest_in_cache(device_id, latest_measurement):
-    # TODO M2:
-    # spara senaste mätvärdet i Redis.
-
     # skapa samma nyckel som används för att hämta mätningen
     cache_key = f"latest:{device_id}"
     # spara mätningen som JSON i Redis med en nyckel för att kunna hitta den senare

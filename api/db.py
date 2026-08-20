@@ -3,6 +3,7 @@ from decimal import Decimal
 import psycopg2
 import psycopg2.extras
 
+
 def get_connection():
     return psycopg2.connect(
         host=os.getenv("DB_HOST", "db"),
@@ -11,6 +12,7 @@ def get_connection():
         user=os.getenv("DB_USER", "student"),
         password=os.getenv("DB_PASSWORD", "student"),
     )
+
 
 def _json_ready(row):
     if row is None:
@@ -23,6 +25,7 @@ def _json_ready(row):
         result["created_at"] = result["created_at"].isoformat()
     return result
 
+
 def get_devices():
     query = """
         SELECT id, device_id, location, device_type
@@ -33,6 +36,7 @@ def get_devices():
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(query)
             return [dict(row) for row in cur.fetchall()]
+
 
 def get_measurements():
     query = """
@@ -46,14 +50,10 @@ def get_measurements():
             cur.execute(query)
             return [_json_ready(row) for row in cur.fetchall()]
 
-def device_exists(device_id):
-    # TODO M1:
-    # Kontrollera om 'device_id' finns i tabellen 'devices'.
-    # Returnera True eller False.
 
+def device_exists(device_id):
     # returnerar '1' för de rader som uppfyller WHERE villkoret
     # %s är platshållare för värdet
-
     query = """
         SELECT 1
         FROM devices
@@ -71,15 +71,12 @@ def device_exists(device_id):
             row = cur.fetchone()
     # om en rad finns returnera True, annars False
             return row is not None
-    
-def get_latest_measurement(device_id):
-    # TODO M1:docker compose exec api python -m pytest -q
-    # Implementera senaste mätvärdet för en sensor.
 
+  
+def get_latest_measurement(device_id):
     # SQL frågan letar efter rätt sensor
     # sorterar mätningarna från nyast till äldst
     # tar den senaste
-
     query = """
         SELECT id, device_id, temperature, humidity, battery, created_at
         FROM measurements
@@ -94,10 +91,8 @@ def get_latest_measurement(device_id):
             # gör raden kompatibel med JSON
             return _json_ready(cur.fetchone())
 
-def get_measurements_for_device(device_id):
-    # TODO M1:
-    # Implementera historik för en sensor.
 
+def get_measurements_for_device(device_id):
     query = """
         SELECT id, device_id, temperature, humidity, battery, created_at
         FROM measurements
@@ -109,10 +104,8 @@ def get_measurements_for_device(device_id):
             cur.execute(query, (device_id,))
             return [_json_ready(row) for row in cur.fetchall()]
 
-def insert_measurement(data):
-    # TODO M1:
-    # Spara ett validerat mätvärde i PostgreSQL.
 
+def insert_measurement(data):
     query = """
         INSERT INTO measurements
         (device_id, temperature, humidity, battery)
