@@ -1,40 +1,15 @@
-# Arkitekturdiagram – obligatorisk leverabel
+# Arkitekturdiagram
 
-Skapa ett enkelt diagram över **din färdiga lösning**. Det ska visa komponenterna och hur de kommunicerar; du behöver inte använda UML eller någon annan avancerad standard.
+## Docker Compose och CI
 
-Diagrammet ska minst visa:
+Diagrammet visar den lokala Docker Compose miljön med tre simulerade IoT-sensorer, REST API, PostgreSQL och Redis. Sensorerna skickar mätningar till API:t via `HTTP POST /measurements`. Mätningarna sparas i PostgreSQL som persistent lagring, medan den senaste mätningen cacheas i Redis. PostgreSQL används för att mätningarna ska finnas kvar över tid, medan Redis används för att snabbt kunna hämta den senaste mätningen.
 
-- en klient eller användare som anropar lösningen
-- de tre simulerade IoT-sensorerna
-- REST API:t
-- PostgreSQL för beständig historik
-- Redis för cache av senaste mätning
-- Docker Compose som lokal körmiljö
-- CI-pipelinen
-- Kubernetes-demon med Deployment, Pod-repliker och Service
+CI-pipelinen körs via GitHub Actions vid push och pull request. Den installerar beroenden, kör tester och bygger API:ts Docker-image.
 
-Använd namngivna pilar som visar viktiga anrop och dataflöden, exempelvis `HTTP POST /measurements`, `SQL` och `cache read/write`. Det ska gå att se vilket flöde som är skrivintensivt (**write-heavy**), vad som cacheas och vad som måste vara persistent.
+![Lokal arkitektur och CI](architecture.png)
 
-Ett enkelt exempel på detaljnivå:
+## Kubernetes – Minikube
 
-```text
-[3 sensorer] -- HTTP POST /measurements --> [REST API]
-                                              |  \
-                               SQL, historik  |   \ senaste värde
-                                              v    v
-                                        [PostgreSQL] [Redis cache]
+Kubernetes-diagrammet visar hur API:t körs i Minikube med en Service, en Deployment och tre Pod-repliker. Servicen används för att ta emot trafik till API:t och skicka den vidare till Pods. Deploymenten ser till att rätt antal Pods körs (desired state) och gör det möjligt att ändra antalet repliker. I demon testades även self-healing genom att ta bort en Pod manuellt och se att Deploymenten startade en ny.
 
-[GitHub push] --> [CI: tester + image build]
-[Användare] --> [Kubernetes Service] --> [Deployment: 3 Pod-repliker]
-```
-
-Exemplet är vägledning, inte en mall som måste kopieras. Du kan göra ett sammanhängande diagram eller två tydligt märkta vyer (lokal Docker Compose-miljö och Kubernetes-demo). Gör inte diagrammet mer detaljerat än vad som behövs för att förklara lösningen.
-
-## Så lämnas det i repositoryt
-
-1. Skapa diagrammet i valfritt verktyg, exempelvis diagrams.net, Excalidraw, Visio, PowerPoint eller Figma.
-2. Exportera det som PNG eller PDF till `docs/`.
-3. Länka eller bädda in filen här.
-4. Ersätt denna instruktion med en kort beskrivning av diagrammet och dina viktigaste arkitekturval.
-
-Kontrollera före inlämning att text och pilar går att läsa direkt från GitHub och att diagrammet stämmer med den kod du faktiskt lämnar in.
+![Kubernetes-arkitektur](kubernetes.png)
