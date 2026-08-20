@@ -1,29 +1,33 @@
-# Jensen IoT Platform – studentguide
+# Jensen IoT Platform
 
-Detta starter-repository hör till uppgiftsunderlaget **Labb för DDM**. Uppgiftsunderlaget beskriver syfte, milstolpar, bedömning, deadline och inlämning. Repositoryt innehåller de praktiska instruktionerna, startkoden och övningarna.
+En IoT-plattform för att ta emot, validera, lagra och läsa sensormätningar.
 
-## Hitta rätt
+Systemet använder Docker Compose för att köra följande tjänster:
 
-- [docs/lab-guide.md](docs/lab-guide.md) – steg-för-steg-instruktioner för alla fyra milstolpar
-- [docs/architecture.md](docs/architecture.md) – instruktion och mall för arkitekturdiagrammet
-- [docs/reflection.md](docs/reflection.md) – obligatoriska reflektionsfrågor
-- `api/` – Flask-API, databas- och cachekod samt tester
-- `simulator/` – tre simulerade IoT-sensorer
-- `database/init.sql` – databastabeller och startdata
-- `k8s/` – färdiga manifest för den introducerande Kubernetes-övningen
+* **API** – Flask-applikation som hanterar REST-endpoints, validering och kommunikation med databasen och Redis
+* **PostgreSQL** – permanent lagring av sensorer och mätningar
+* **Redis** – cache för den senaste mätningen kopplad till varje sensor
+* **Simulator** – simulerar tre IoT-sensorer och skickar mätningar till API:t
 
-## Verktyg som behövs
+Projektet innehåller även:
+
+* **CI** – GitHub Actions som kör tester och bygger API:ts Docker-image vid push och pull request
+* **Kubernetes** – en introducerande Kubernetes-konfiguration för att köra API:t med Minikube
+
+Projektets arkitektur beskrivs separat i [`docs/architecture.md`](docs/architecture.md).
+
+## Förutsättningar
 
 Installera innan du börjar:
 
-1. Git och ett GitHub-konto.
-2. Docker Desktop (Windows/macOS) eller Docker Engine med Docker Compose-plugin (Linux).
-3. En valfri kodeditor, exempelvis Visual Studio Code.
-4. Inför milstolpe 3: `kubectl` och Minikube.
+* Git och ett GitHub-konto
+* Docker Desktop (Windows/macOS) eller Docker Engine med Docker Compose-plugin (Linux)
+* En valfri kodeditor, exempelvis Visual Studio Code
+* kubectl och Minikube för Kubernetes-delen
 
-Python behöver inte installeras lokalt för grunduppgifterna; Python och beroenden finns i containrarna. Kontrollera installationerna i PowerShell, Terminal eller ett Linux-skal:
+Python behöver inte installeras lokalt eftersom Python och projektets beroenden finns i containrarna. Kontrollera installationerna i PowerShell, Terminal eller ett Linux-skal:
 
-```text
+```bash
 git --version
 docker --version
 docker compose version
@@ -31,86 +35,191 @@ kubectl version --client
 minikube version
 ```
 
-> Windows: använd PowerShell och kör Docker Desktop innan Docker-kommandona. Kommandona i guiden är desamma på Windows, macOS och Linux. Där ett kommando skiljer sig anges det uttryckligen.
+## Bygga och starta
 
-## Start här – första 10 minuterna
+### 1. Klona repositoryt och gå till projektets rot:
 
-### 1. Skapa och klona din fork
-
-Skapa en fork av kursens starter-repository på GitHub. Kopiera URL:en till **din fork** och kör:
-
-```text
-git clone <URL-TILL-DIN-FORK>
-cd <REPOSITORY-MAPP>
+```bash
+git clone <REPOSITORY-URL>
+cd jensen-IOT-lab
 ```
-
-Kontrollera att du står i repositoryts rot, alltså mappen som innehåller `docker-compose.yml`. Alla Docker Compose-kommandon i guiden ska köras därifrån.
 
 ### 2. Kontrollera Docker
 
 Starta Docker Desktop på Windows/macOS eller Docker Engine på Linux. Kontrollera sedan installationen:
 
-```text
+```bash
 docker info
 docker compose version
 ```
 
-Båda kommandona ska fungera utan fel. Ingen `.env`-fil eller lokal Python-installation behövs; projektet har fungerande standardvärden och kör Python i containern.
+### 3. Bygg och starta miljön:
 
-### 3. Bygg och starta miljön
-
-```text
+```bash
 docker compose up --build -d
 docker compose ps
 ```
 
 `docker compose ps` ska visa tjänsterna `api`, `simulator`, `db` och `redis`. Databasen ska efter en kort stund visa `healthy`. Om någon tjänst fortfarande startar, vänta några sekunder och kör statuskommandot igen.
 
-### 4. Kontrollera API:t
+## API-endpoints
 
-Öppna följande adresser:
+### `GET /`
 
-- <http://localhost:5001> – enkel startsida
-- <http://localhost:5001/health> – ska visa `"status": "ok"`
-- <http://localhost:5001/devices> – ska visa tre sensorer
-- <http://localhost:5001/measurements> – ska visa en tom lista `[]`
-
-Den tomma listan är förväntad. Simulatorns giltiga data tas emot men sparas inte förrän du har implementerat lagringen i milstolpe 1.
-
-### 5. Följ simulatorn
+Visar API:ets startsida.
 
 ```text
+http://localhost:5001/
+```
+
+### `GET /health`
+
+Kontrollerar API:ets status.
+
+```text
+http://localhost:5001/health
+```
+
+### `GET /devices`
+
+Returnerar registrerade sensorer från PostgreSQL.
+
+```text
+http://localhost:5001/devices
+```
+
+### `GET /measurements`
+
+Returnerar de senaste mätningarna från PostgreSQL.
+
+```text
+http://localhost:5001/measurements
+```
+
+### `GET /devices/<device_id>/latest`
+
+Returnerar den senaste mätningen för en sensor.
+
+Exempel:
+
+```text
+http://localhost:5001/devices/sensor-001/latest
+```
+
+Returnerar `404` om sensorn inte finns eller om sensorn saknar mätningar.
+
+Endpointen använder Redis som cache. Vid cache hit returneras mätningen direkt från Redis. Vid cache miss hämtas mätningen från PostgreSQL och sparas i Redis.
+
+### `GET /devices/<device_id>/measurements`
+
+Returnerar historiken för en sensor.
+
+Exempel:
+
+```text
+http://localhost:5001/devices/sensor-001/measurements
+```
+
+En känd sensor utan mätningar returnerar:
+
+```json
+[]
+```
+
+### `POST /measurements`
+
+Tar emot en ny sensormätning.
+
+Exempel:
+
+```json
+{
+  "deviceId": "sensor-001",
+  "temperature": 21.5,
+  "humidity": 45.0,
+  "battery": 90
+}
+```
+Vid en giltig mätning returneras `201`.
+Vid valideringsfel eller om `deviceId` inte finns returneras `400`.
+
+## Kontroll och testning
+
+### PostgreSQL
+
+```bash
+docker compose exec db psql -U student -d jensen_iot
+```
+
+SQL-frågor för att kontrollera databasen finns i:
+
+```text
+database/sql_queries.sql
+```
+### Redis cache miss
+
+Töm Redis:
+
+```bash
+docker compose exec redis redis-cli FLUSHDB
+```
+
+Öppna:
+
+http://localhost:5001/devices/sensor-001/latest
+
+Kontrollera att mätningen har sparats i Redis:
+
+```bash
+docker compose exec redis redis-cli KEYS 'latest:*'
+```
+
+### Simulator
+
+Följ simulatorns loggar:
+
+```bash
 docker compose logs -f simulator
 ```
 
-Från början returnerar API:t status `202` för giltiga mätningar. `sensor-003` skickar ibland avsiktligt felaktig data och ska då få `400`. Det är förväntat. Avsluta den löpande loggvisningen med `Ctrl+C`; tjänsterna fortsätter att köras i bakgrunden.
+## Tester
 
-### 6. Ändra och testa koden
+Kör testerna med:
 
-Du kommer främst att arbeta i:
+```bash
+docker compose exec api python -m pytest -q
+```
 
-- `api/app.py` – endpoints och HTTP-statuskoder
-- `api/db.py` – PostgreSQL-frågor
-- `api/cache.py` – Redis-cache
-- `api/validation.py` – valideringsregler
-- `api/tests/` – automatiserade tester
+Efter kodändringar kan hela API-imagen byggas om och testerna köras igen:
 
-Källkoden kopieras in i Docker-imagen. Bygg därför om efter kodändringar och kör testerna:
-
-```text
+```bash
 docker compose up --build -d
 docker compose exec api python -m pytest -q
 ```
 
-Visa API-loggen om något går fel:
+## Loggar
 
-```text
-docker compose logs --tail=100 api
+API:
+
+```bash
+docker compose logs --tail=50 api
 ```
 
-### 7. Stoppa miljön
+Simulator:
 
-```text
+```bash
+docker compose logs --tail=50 simulator
+```
+
+Alla tjänster:
+
+```bash
+docker compose logs --tail=50
+```
+
+## Stoppa miljön
+
+```bash
 docker compose down
 ```
 
@@ -120,15 +229,91 @@ Databasen sparas i en Docker-volym och finns kvar till nästa start. Använd end
 docker compose down -v
 ```
 
-Fortsätt nu till [docs/lab-guide.md](docs/lab-guide.md) och genomför milstolparna i ordning.
+## CI-pipeline
 
-## Om starten misslyckas
+CI-workflowen finns i:
 
-- Kontrollera att Docker Desktop/Docker Engine körs med `docker info`.
-- Kör kommandot från repositoryts rot.
-- Om port `5001` används av ett annat program: stoppa programmet eller starta med en annan port. PowerShell: `$env:API_PORT=5002; docker compose up --build`. macOS/Linux: `API_PORT=5002 docker compose up --build`.
-- Visa status med `docker compose ps` och loggar med `docker compose logs api db redis simulator`.
-- Om en kodändring inte syns, kontrollera att du har kört `docker compose up --build -d` efter ändringen.
+```text
+.github/workflows/ci.yml
+```
+Workflowen körs vid push och pull request och:
 
-## M1/4. Grundläggande SQL-uppgifter
-De tre SQL-frågorna finns i [sql_queries.sql](database/sql_queries.sql).
+- installerar projektets Python-beroenden
+- kör testerna
+- bygger API:ts Docker-image
+
+CI-resultatet kan kontrolleras under Actions på GitHub.
+
+Testerna kan även köras lokalt med:
+
+```bash
+docker compose exec api python -m pytest -q
+```
+
+## Kubernetes
+
+Kubernetes-delen körs med Minikube. API-imagen byggs direkt i Minikube:
+
+```bash
+minikube start --driver=docker
+minikube status
+minikube image build -t jensen-iot-api:lab ./api
+```
+
+Distribuera API:t:
+
+```bash
+kubectl apply -f k8s/deployment.yaml
+kubectl apply -f k8s/service.yaml
+```
+
+Kontrollera Pods:
+
+```bash
+kubectl get pods
+```
+
+Nå tjänsten:
+
+```bash
+minikube service jensen-iot-api
+```
+
+Kubernetes-delen används för att testa:
+
+- flera repliker av API:t
+- self-healing när en Pod tas bort
+- scaling genom att ändra antalet repliker
+
+Skala API:t till fem repliker:
+
+```bash
+kubectl scale deployment jensen-iot-api --replicas=5
+kubectl get pods
+```
+
+Skala tillbaka till tre:
+
+```bash
+kubectl scale deployment jensen-iot-api --replicas=3
+kubectl get pods
+```
+
+När Kubernetes-testet är klart:
+
+```bash
+minikube stop
+```
+
+## Kända begränsningar
+
+* Simulatorn använder genererade mätvärden i stället för data från riktiga IoT-sensorer.
+* PostgreSQL använder `student` som standardanvändare och `student` som standardlösenord för anslutning.
+* API:t kontrollerar att `deviceId` finns i databasen, men verifierar inte att den som skickar mätningen faktiskt är den registrerade sensorn.
+* Om Redis inte är tillgängligt misslyckas API-anrop som hämtar den senaste mätningen.
+
+## Dokumentation
+
+* [`docs/architecture.md`](docs/architecture.md)
+* [`docs/reflection.md`](docs/reflection.md)
+* [`database/sql_queries.sql`](database/sql_queries.sql)
