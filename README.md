@@ -174,14 +174,6 @@ Kontrollera att mätningen har sparats i Redis:
 docker compose exec redis redis-cli KEYS 'latest:*'
 ```
 
-### Simulator
-
-Följ simulatorns loggar:
-
-```bash
-docker compose logs -f simulator
-```
-
 ## Tester
 
 Kör testerna med:
@@ -209,6 +201,12 @@ Simulator:
 
 ```bash
 docker compose logs --tail=50 simulator
+```
+
+Följ simulatorns loggar kontinuerligt:
+
+```bash
+docker compose logs -f simulator
 ```
 
 Alla tjänster:
@@ -252,7 +250,7 @@ docker compose exec api python -m pytest -q
 
 ## Kubernetes
 
-Kubernetes-delen körs med Minikube. API-imagen byggs direkt i Minikube:
+Kubernetes-delen körs med Minikube:
 
 ```bash
 minikube start --driver=docker
