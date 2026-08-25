@@ -26,4 +26,10 @@ jobs:
           PGPASSWORD=student psql -h localhost -U student -d jensen_iot -f database/init.sql
       - run: python -m pytest tests -q
         working-directory: api
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: jensen_iot
+          DB_USER: student
+          DB_PASSWORD: student
       - run: docker build -t jensen-iot-api:ci ./api
