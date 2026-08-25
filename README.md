@@ -315,3 +315,11 @@ minikube stop
 * [`docs/architecture.md`](docs/architecture.md)
 * [`docs/reflection.md`](docs/reflection.md)
 * [`database/sql_queries.sql`](database/sql_queries.sql)
+
+## Fördjupning
+
+Projektet innehåller två extra SQL-frågor som fördjupning. 
+
+Den första frågan hittar sensorn som har högst medeltemperatur. AVG räknar ut medeltemperaturen och GROUP BY grupperar mätningarna efter sensor (`device_id`). DESC sorterar från högst till lägst och LIMIT 1 visar bara den sensor som har högst medeltemperatur.
+
+Den andra frågan hittar sensorn som har flest mätningar. COUNT räknar hur många mätningar varje sensor har och GROUP BY grupperar mätningarna efter sensor (`device_id`). DESC sorterar från flest till minst och LIMIT 1 visar den sensor som har flest mätningar.
