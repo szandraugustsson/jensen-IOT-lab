@@ -348,3 +348,5 @@ Testerna körs med:
 ```bash
 docker compose exec api python -m pytest -q
 ```
+
+Integrationstesterna använder PostgreSQL och Redis. Därför har även CI konfigurerats med dessa tjänster, så att testerna kan köras både lokalt och i GitHub Actions.
