@@ -4,12 +4,26 @@ on: [push, pull_request]
 jobs:
   test-and-build:
     runs-on: ubuntu-latest
+    # PostgreSQL behövs eftersom integrationstesterna använder databasen (CI-testet går inte igenom utan databasen)
+    services:
+      db:
+        image: postgres:16
+        env:
+          # testuppgifter för PostgreSQL i CI
+          POSTGRES_DB: jensen_iot
+          POSTGRES_USER: student
+          POSTGRES_PASSWORD: student
+        ports:
+          - 5432:5432
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - run: pip install -r api/requirements.txt
+      # initierar testdatabasen med tabeller och testsensorer
+      - run: |
+          PGPASSWORD=student psql -h localhost -U student -d jensen_iot -f database/init.sql
       - run: python -m pytest tests -q
         working-directory: api
       - run: docker build -t jensen-iot-api:ci ./api
