@@ -4,7 +4,7 @@ on: [push, pull_request]
 jobs:
   test-and-build:
     runs-on: ubuntu-latest
-    # PostgreSQL behövs eftersom integrationstesterna använder databasen (CI-testet går inte igenom utan databasen)
+    # PostgreSQL och Redis behövs för integrationstesterna (CI-testet går inte igenom utan databasen)
     services:
       db:
         image: postgres:16
@@ -15,6 +15,10 @@ jobs:
           POSTGRES_PASSWORD: student
         ports:
           - 5432:5432
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -32,4 +36,6 @@ jobs:
           DB_NAME: jensen_iot
           DB_USER: student
           DB_PASSWORD: student
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
       - run: docker build -t jensen-iot-api:ci ./api
