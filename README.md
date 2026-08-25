@@ -318,8 +318,33 @@ minikube stop
 
 ## Fördjupning
 
+### Extra SQL-frågor
+
 Projektet innehåller två extra SQL-frågor som fördjupning. 
 
 Den första frågan hittar sensorn som har högst medeltemperatur. AVG räknar ut medeltemperaturen och GROUP BY grupperar mätningarna efter sensor (`device_id`). DESC sorterar från högst till lägst och LIMIT 1 visar bara den sensor som har högst medeltemperatur.
 
 Den andra frågan hittar sensorn som har flest mätningar. COUNT räknar hur många mätningar varje sensor har och GROUP BY grupperar mätningarna efter sensor (`device_id`). DESC sorterar från flest till minst och LIMIT 1 visar den sensor som har flest mätningar.
+
+### Automatiserade integrationstester
+
+Projektet har även tre automatiserade integrationstester.
+Testerna använder Flask Test Client och pytest för att skicka HTTP-anrop till API:ts endpoints.
+
+Testerna kontrollerar:
+
+- att en giltig mätning kan skickas med `POST /measurements` och ger `201`
+- att en ogiltig mätning nekas med `POST /measurements` och ger `400`
+- att `GET /devices` fungerar och ger `200`
+
+Testerna finns i:
+
+```text
+api/tests/test_integration.py
+```
+
+Testerna körs med:
+
+```bash
+docker compose exec api python -m pytest -q
+```
